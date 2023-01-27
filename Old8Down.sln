@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownRegex", "DownRegex\DownRegex.csproj", "{E8B4929E-169A-4D63-B677-1A69883509EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownConsole", "DownConsole\DownConsole.csproj", "{44F910AA-D45B-4972-BF70-B6C5926F30B1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{E8B4929E-169A-4D63-B677-1A69883509EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8B4929E-169A-4D63-B677-1A69883509EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8B4929E-169A-4D63-B677-1A69883509EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44F910AA-D45B-4972-BF70-B6C5926F30B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44F910AA-D45B-4972-BF70-B6C5926F30B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44F910AA-D45B-4972-BF70-B6C5926F30B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44F910AA-D45B-4972-BF70-B6C5926F30B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

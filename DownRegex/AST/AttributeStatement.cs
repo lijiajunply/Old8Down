@@ -12,12 +12,12 @@ public class AttributeStatement : Statement
         TheAttribute = theAttribute;
         AttributeSet.Add("Bold","b");
         AttributeSet.Add("Italic","i");
-        AttributeSet.Add("Delete","~");
+        AttributeSet.Add("Delete","d");
+        AttributeSet.Add("Escape","e");
     }
 
     public override string ToHTML()
     {
-        string att = "";
         if (TheAttribute == AttributeSet["Bold"])
         {
             return $"<strong>{AttributeString}</strong>";
@@ -26,10 +26,13 @@ public class AttributeStatement : Statement
         {
             return $"<em>{AttributeString}</em>";
         }
-
         if (TheAttribute == AttributeSet["Delete"])
         {
             return $"<s>{AttributeString}</s>";
+        }
+        if (TheAttribute == AttributeSet["Escape"])
+        {
+            return AttributeString;
         }
         return String.Empty;
     }

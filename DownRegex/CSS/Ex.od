@@ -1,5 +1,21 @@
-* asdf|
-asdf|
+片段！
+片段，但是有(b,Bold),(i,Italic),(d,Delete),(e,@[https://www.baidu.com,百度])@[https://www.baidu.com,百度]
+@[https://www.baidu.com,百度]
+(b,asf)
+# h1
+#[2] h2，数字代表h几
+* 这是表单头|头2|
+表单1|表单2|
 ```csharp
-Console.WriteLine();
+Console.WriteLine();//代码片段
 ```
+// ![图片地址,文字,标签]
+// (b,Bold) 转义
+该项目目前还有一些bug
+全部语法:
+// #[int(1-6)] text
+// # text
+// @[url,text]
+// . text
+// - text
+// ```lang ```

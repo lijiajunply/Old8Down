@@ -9,45 +9,32 @@ namespace DownRegex;
 public class RegexDown
 {
     #region List
-
     private List<string>              DisorderedList { get; set; } = new List<string>();
     private List<string>              OrderList      { get; set; } = new List<string>();
     private List<string>              BlockList      { get; set; } = new List<string>();
     private List<string>              CssUsing       { get; set; } = new List<string>();
     private List<string>              JSUsing        { get; set; } = new List<string>();
     public  List<Statement>           Asts           { get; set; } = new List<Statement>();
-    private Dictionary<string,string> Regexs         { get; set; } = new Dictionary<string,string>();
+    private Dictionary<string,string> Regexs         { get; set; } = DownApi.Regexs;
     private List<string[]>            Context        { get; set; } = new List<string[]>();
     #endregion
 
 
     #region Field
-
-    private bool     isBlock    { get; set; }
-    private string   Lang       { get; set; }
-    private string[] Code       { get; set; }
-    private string[] Head       { get; set; }
+    private bool     IsBlock { get; set; }
+    private string   Lang    { get; set; }
+    private string[] Code    { get; set; }
+    private string[] Head    { get; set; }
     private string   AboveOp { get; set; }
     #endregion
 
     public RegexDown(string[] code)
     {
-        isBlock = false;
+        IsBlock = false;
         Code    = code;
 
         #region Regexs
-
-        Regexs.Add("TitleStatement",     @"\#\[([2-6])\]\s(.*)");    // #[int(1-6)] (text)
-        Regexs.Add("TitleH1Statement",   @"\#\s(.*)");               // # (text)
-        Regexs.Add("AtStatement",        @"@\[(.*),(.*)\]");         // @(url,text)
-        Regexs.Add("DisorderedStatement","\\.\\s(.*)");              // . text
-        Regexs.Add("OrderlyStatement",   "\\-\\s(.*)");              // - text
-        Regexs.Add("BlockStatement",     "```(.*)");                 // ```lang ```
-        Regexs.Add("AttributeStatement", "\\((.*?),(.*?)\\)"); // (att,att_text)
-        Regexs.Add("ImageStatement",     "\\!\\[(.*),(.*),(.*)\\]"); // ![src,alt,title]
-        Regexs.Add("EscapeStatement",    "//\\s(.*)");               // // text
-        Regexs.Add("TableStatement",     "(.*?\\|)+?");              // context|context|context|
-
+        
         #endregion
 
         #region Css&JS
@@ -85,7 +72,7 @@ public class RegexDown
         return Asts;
     }
 
-    public string ToHTML()
+    public string ToHTMLComplete()
     {
         GetTree();
         StringBuilder builder = new StringBuilder("<!DOCTYPE html>\n"+@"<html lang=""en"">"+"\n<body>"+"\n"+
@@ -98,6 +85,18 @@ public class RegexDown
             builder.Append(statement.ToHTML()+"\n");
 
         builder.Append("</body>\n</html>");
+        return builder.ToString();
+    }
+    public string ToHTML()
+    {
+        GetTree();
+        StringBuilder builder = new StringBuilder();
+        foreach (var css in CssUsing)
+            builder.Append(css+"\n");
+        foreach (var js in JSUsing)
+            builder.Append(js+"\n");
+        foreach (var statement in Asts)
+            builder.Append(statement.ToHTML()+"\n");
         return builder.ToString();
     }
 
@@ -122,10 +121,10 @@ public class RegexDown
 
         if (code == "```")
         {
-            isBlock = false;
+            IsBlock = false;
             return Search(line+1);
         }
-        if (isBlock)
+        if (IsBlock)
         {
             BlockList.Add(code);
             return Search(line+1);
@@ -137,7 +136,7 @@ public class RegexDown
             AboveOp = "BlockOp";
             var a = Regex.Match(code,Regexs["BlockStatement"]);
             Lang    = a.Groups[1].Value;
-            isBlock = true;
+            IsBlock = true;
             return Search(line+1);
         }
 
@@ -209,7 +208,6 @@ public class RegexDown
         #endregion
         
         #region other
-
         if (Regex.IsMatch(code,Regexs["TitleStatement"]))
         {
             var a = Regex.Match(code,Regexs["TitleStatement"]);
@@ -222,40 +220,17 @@ public class RegexDown
             Asts.Add(new TitleStatement(1,a.Groups[1].Value));
             return Search(line+1);
         }
-        if (Regex.IsMatch(code,Regexs["AtStatement"]))
-        {
-            var a = Regex.Match(code,Regexs["AtStatement"]);
-            Asts.Add(new AtStatement(a.Groups[1].Value,a.Groups[2].Value));
-            return Search(line+1);
-        }
-        if (Regex.IsMatch(code,Regexs["AttributeStatement"]))
-        {
-            List<Statement> statements = new List<Statement>();
-            
-            var re = new Regex(Regexs["AttributeStatement"]);
-            var p  = re.Replace(code,"\n").Split("\n");
-            var a  = re.Matches(code);
-            for (int i = 0; i < p.Length; i++)
-            {
-                statements.Add(new StringStatement(p[i]));
-                if(i < a.Count)
-                    statements.Add(new AttributeStatement(a[i].Groups[1].Value,a[i].Groups[2].Value));
-            }
-            Asts.Add(new ParagraphStatement(statements));
-            return Search(line+1);
-        }
         if (Regex.IsMatch(code,Regexs["ImageStatement"]))
         {
             var a = Regex.Match(code,Regexs["ImageStatement"]);
             Asts.Add(new ImageStatement(a.Groups[1].Value,a.Groups[2].Value,a.Groups[3].Value));
             return Search(line+1);
         }
-
         #endregion
-        
-        if (code != "")
-            Asts.Add(new ParagraphStatement(code));
 
+        if (code != "")
+            Asts.Add(new ParagraphStatement(new StringStatement(code).ToHTML()));
         return Search(line+1);
     }
+    
 }

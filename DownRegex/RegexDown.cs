@@ -9,20 +9,25 @@ namespace DownRegex;
 public class RegexDown
 {
     #region List
-    public List<string>              DisorderedList { get; set; } = new ();
-    public List<string>              OrderList      { get; set; } = new ();
-    public List<string>              BlockList      { get; set; } = new ();
-    public List<string>              CssUsing       { get; set; } = new ();
-    public List<string>              JSUsing        { get; set; } = new ();
-    public List<Statement>           Asts           { get; set; } = new ();
-    public Dictionary<string,string> Regexs         { get; set; } = new ();
+
+    private List<string>              DisorderedList { get; set; } = new List<string>();
+    private List<string>              OrderList      { get; set; } = new List<string>();
+    private List<string>              BlockList      { get; set; } = new List<string>();
+    private List<string>              CssUsing       { get; set; } = new List<string>();
+    private List<string>              JSUsing        { get; set; } = new List<string>();
+    public  List<Statement>           Asts           { get; set; } = new List<Statement>();
+    private Dictionary<string,string> Regexs         { get; set; } = new Dictionary<string,string>();
+    private List<string[]>            Context        { get; set; } = new List<string[]>();
     #endregion
 
 
     #region Field
-    public bool     isBlock { get; set; }
-    public string   Lang    { get; set; }
-    public string[] Code    { get; set; }
+
+    private bool     isBlock    { get; set; }
+    private string   Lang       { get; set; }
+    private string[] Code       { get; set; }
+    private string[] Head       { get; set; }
+    private string   AboveOp { get; set; }
     #endregion
 
     public RegexDown(string[] code)
@@ -41,6 +46,7 @@ public class RegexDown
         Regexs.Add("AttributeStatement", "\\((.*?),(.*?)\\)"); // (att,att_text)
         Regexs.Add("ImageStatement",     "\\!\\[(.*),(.*),(.*)\\]"); // ![src,alt,title]
         Regexs.Add("EscapeStatement",    "//\\s(.*)");               // // text
+        Regexs.Add("TableStatement",     "(.*?\\|)+?");              // context|context|context|
 
         #endregion
 
@@ -57,9 +63,19 @@ public class RegexDown
 
     private void Init()
     {
+        if (DisorderedList.Count > 0)
+            Asts.Add(new DisorderedStatement(DisorderedList));
+        else if (OrderList.Count > 0)
+            Asts.Add(new OrderlyStatement(OrderList));
+        else if (BlockList.Count > 0)
+            Asts.Add(new BlockStatement(Lang,BlockList));
+        else if (Context.Count > 0)
+            Asts.Add(new TableStatement(Head,Context));
         DisorderedList = new List<string>();
         OrderList      = new List<string>();
         BlockList      = new List<string>();
+        Context        = new List<string[]>();
+        Head           = Array.Empty<string>();
         Lang           = String.Empty;
     }
 
@@ -75,46 +91,31 @@ public class RegexDown
         StringBuilder builder = new StringBuilder("<!DOCTYPE html>\n"+@"<html lang=""en"">"+"\n<body>"+"\n"+
                                                   @"<meta http-equiv=""Context-Type"" content=""text/html;charset=utf-8"" />");
         foreach (var css in CssUsing)
-        {
             builder.Append(css+"\n");
-        }
         foreach (var js in JSUsing)
-        {
             builder.Append(js+"\n");
-        }
         foreach (var statement in Asts)
-        {
             builder.Append(statement.ToHTML()+"\n");
-        }
 
         builder.Append("</body>\n</html>");
         return builder.ToString();
     }
 
-    public string Search(int line)
+    private string Search(int line)
     {
+
+        #region end
+
         if (line >= Code.Length)
         {
-            if (DisorderedList.Count > 0)
-            {
-                Asts.Add(new DisorderedStatement(DisorderedList));
-                return String.Empty;
-            }
-            if (OrderList.Count > 0)
-            {
-                Asts.Add(new OrderlyStatement(OrderList));
-                return String.Empty;
-            }
-            if (BlockList.Count > 0)
-            {
-                Asts.Add(new BlockStatement(Lang,BlockList));
-                return String.Empty;
-            }
             Init();
             return String.Empty;
         }
 
-        string code = Code[line];
+        #endregion
+        
+
+        var code = Code[line];
 
 
         #region BlockStatement
@@ -131,6 +132,9 @@ public class RegexDown
         }
         if (Regex.IsMatch(code,Regexs["BlockStatement"]))
         {
+            if(AboveOp != "BlockOp")
+                Init();
+            AboveOp = "BlockOp";
             var a = Regex.Match(code,Regexs["BlockStatement"]);
             Lang    = a.Groups[1].Value;
             isBlock = true;
@@ -138,8 +142,6 @@ public class RegexDown
         }
 
         #endregion
-
-
         
         #region Escape
 
@@ -151,50 +153,61 @@ public class RegexDown
         }
 
         #endregion
-
-
+        
         #region List
 
         if (Regex.IsMatch(code,Regexs["DisorderedStatement"]))
         {
+            if(AboveOp != "DisOp")
+                Init();
+            AboveOp = "DisOp";
             var a = Regex.Match(code,Regexs["DisorderedStatement"]);
             DisorderedList.Add(a.Groups[1].Value);
             return Search(line+1);
         }
         if (Regex.IsMatch(code,Regexs["OrderlyStatement"]))
         {
+            if(AboveOp != "OrderOp")
+                Init();
+            AboveOp = "OrderOp";
             var a = Regex.Match(code,Regexs["OrderlyStatement"]);
             OrderList.Add(a.Groups[1].Value);
             return Search(line+1);
         }
+        if (Regex.IsMatch(code,Regexs["TableStatement"]))
+        {
+            if(AboveOp != "TableOp")
+                Init();
+            AboveOp = "TableOp";
+            var a = Regex.Matches(code,Regexs["TableStatement"]);
+            if (code[0] == '*' && code[1] == ' ')
+            {
+                Head = new string[a.Count];
+                for (int i = 0; i < a.Count; i++)
+                {
+                    Match match = a[i];
+                    Head[i] = 
+                        i == 0 ? match.Groups[1].Value[2..^1] : match.Groups[1].Value[..^1];
+                }
+                return Search(line+1);
+            }
+            
+            var l = new List<string>();
+            foreach (Match match in a)
+                l.Add(match.Groups[1].Value[..^1]);        
+            Context.Add(l.ToArray());
+            return Search(line+1);
+        }
 
         #endregion
-
-
+        
         #region init
-
-        List<string> aaa = new List<string>();
-        if (DisorderedList.Count > 0)
-        {
-            aaa = DisorderedList;
-            Asts.Add(new DisorderedStatement(aaa));
-        }
-        if (OrderList.Count > 0)
-        {
-            aaa = OrderList;
-            Asts.Add(new OrderlyStatement(aaa));
-
-        }
-        if (BlockList.Count > 0)
-        {
-            aaa = BlockList;
-            Asts.Add(new BlockStatement(Lang,aaa));
-        }
+        
         Init();
+        AboveOp = "OtherOp";
 
         #endregion
-
-
+        
         #region other
 
         if (Regex.IsMatch(code,Regexs["TitleStatement"]))
@@ -239,8 +252,7 @@ public class RegexDown
         }
 
         #endregion
-
-
+        
         if (code != "")
             Asts.Add(new ParagraphStatement(code));
 

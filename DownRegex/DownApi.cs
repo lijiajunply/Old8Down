@@ -20,9 +20,10 @@ public class DownApi
                                                                           {"EscapeStatement",    "//\\s(.*)"},               // // text
                                                                           {"TableStatement",     "(.*?\\|)+?"}              // context|context|context|
                                                                       };
-    private readonly string                    Path;
-    private          List<Statement>           Asts       { get; set; }
-    private          string[]                  GetTexts() => File.ReadAllLines(Path,Encoding.UTF8);
+    private readonly string          Path;
+    private          List<Statement> Asts       { get; set; }
+    private          string          Code       { get; set; }
+    private          string[]        GetTexts() => File.ReadAllLines(Path,Encoding.UTF8);
     public DownApi(string path)
     {
         Path = path;
@@ -32,7 +33,10 @@ public class DownApi
     {
         var a = new RegexDown(GetTexts());
         Asts = a.Asts;
+        Code = a.ToHTMLComplete();
         return a.ToHTMLComplete();
     }
-    
+    public void ToFile() => File.WriteAllText(Path,Code);
+
+
 }

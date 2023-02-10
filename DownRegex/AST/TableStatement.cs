@@ -17,7 +17,7 @@ public class TableStatement : Statement
 
     public override string ToHTML()
     {
-        StringBuilder builder = new StringBuilder(@"<table class=""tabletable-bordered"">"+"\n");
+        StringBuilder builder = new StringBuilder(@"<table class=""table table-condensed"">"+"\n");
         if (Head.Length != 0)
         {
             builder.Append("<thead><tr>\n");

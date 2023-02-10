@@ -12,8 +12,9 @@ public class RegexDown
     private List<string>              DisorderedList { get; set; } = new List<string>();
     private List<string>              OrderList      { get; set; } = new List<string>();
     private List<string>              BlockList      { get; set; } = new List<string>();
+    private List<string>              CodeList       { get; set; } = new List<string>();
     private List<string>              CssUsing       { get; set; } = new List<string>();
-    private List<string>              JSUsing        { get; set; } = new List<string>();
+    private List<string>              JsUsing        { get; set; } = new List<string>();
     public  List<Statement>           Asts           { get; set; } = new List<Statement>();
     private Dictionary<string,string> Regexs         { get; set; } = DownApi.Regexs;
     private List<string[]>            Context        { get; set; } = new List<string[]>();
@@ -21,29 +22,25 @@ public class RegexDown
 
 
     #region Field
-    private bool     IsBlock { get; set; }
-    private string   Lang    { get; set; }
-    private string[] Code    { get; set; }
-    private string[] Head    { get; set; }
-    private string   AboveOp { get; set; }
+    private bool          IsBlock   { get; set; }
+    private bool          IsCode    { get; set; }
+    private string        Lang      { get; set; }
+    private string[]      Code      { get; set; }
+    private string[]      Head      { get; set; }
+    private string        AboveOp   { get; set; }
     #endregion
 
     public RegexDown(string[] code)
     {
-        IsBlock = false;
-        Code    = code;
-
-        #region Regexs
-        
-        #endregion
-
+        IsBlock   = false;
+        Code      = code;
         #region Css&JS
-
         CssUsing.Add(@"<link rel=""stylesheet"" href=""prism.css"">");
-        JSUsing.Add(@"<script src = ""https://cdn.jsdelivr.net/npm/jquery@3.2/dist/jquery.min.js""></script>"+"\n"+
-                        @"<script src =""https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.js""></script>"
-                        +"\n"+
-                        @"<script src =""prism.js""></script>");
+        CssUsing.Add(@"<link href=""https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"" rel=""stylesheet"">");
+        JsUsing.Add(@"<script src = ""https://cdn.jsdelivr.net/npm/jquery@3.2/dist/jquery.min.js""></script>");
+        JsUsing.Add(@"<script src =""prism.js""></script>");
+        JsUsing.Add(@"<script src =""https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.js""></script>");
+        JsUsing.Add(@"<script src=""js/bootstrap.min.js""></script>");
         #endregion
 
     }
@@ -58,10 +55,13 @@ public class RegexDown
             Asts.Add(new BlockStatement(Lang,BlockList));
         else if (Context.Count > 0)
             Asts.Add(new TableStatement(Head,Context));
+        else if (CodeList.Count > 0)
+            Asts.Add(new CodeStatement(CodeList));
         DisorderedList = new List<string>();
         OrderList      = new List<string>();
         BlockList      = new List<string>();
         Context        = new List<string[]>();
+        CodeList       = new List<string>();
         Head           = Array.Empty<string>();
         Lang           = String.Empty;
     }
@@ -79,7 +79,7 @@ public class RegexDown
                                                   @"<meta http-equiv=""Context-Type"" content=""text/html;charset=utf-8"" />");
         foreach (var css in CssUsing)
             builder.Append(css+"\n");
-        foreach (var js in JSUsing)
+        foreach (var js in JsUsing)
             builder.Append(js+"\n");
         foreach (var statement in Asts)
             builder.Append(statement.ToHTML()+"\n");
@@ -93,7 +93,7 @@ public class RegexDown
         StringBuilder builder = new StringBuilder();
         foreach (var css in CssUsing)
             builder.Append(css+"\n");
-        foreach (var js in JSUsing)
+        foreach (var js in JsUsing)
             builder.Append(js+"\n");
         foreach (var statement in Asts)
             builder.Append(statement.ToHTML()+"\n");
@@ -139,8 +139,34 @@ public class RegexDown
             IsBlock = true;
             return Search(line+1);
         }
+        #endregion
+        
+        #region CodeBlock
+
+        if (code == "==")
+        {
+            IsCode = false;
+            return Search(line+1);
+        }
+        if (IsCode)
+        {
+            CodeList.Add(code);
+            return Search(line+1);
+        }
+        if (Regex.IsMatch(code,Regexs["CodeStatement"]))
+        {
+            if(AboveOp != "CodeOp")
+                Init();
+            AboveOp = "CodeOp";
+            var a = Regex.Match(code,Regexs["CodeStatement"]);
+            Lang   = a.Groups[1].Value;
+            IsCode = true;
+            return Search(line+1);
+        }
 
         #endregion
+        
+        
         
         #region Escape
 

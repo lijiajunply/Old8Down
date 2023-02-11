@@ -9,36 +9,44 @@ public class DownApi
 {
     public static Dictionary<string,string> Regexs { get; set; } = new Dictionary<string,string>()
                                                                    {
-                                                                       { "TitleStatement",@"\#\[([2-6])\]\s(.*)" }, // #[int(1-6)] text
+                                                                       {
+                                                                           "TitleStatement",@"\#\[([2-6])\]\s(.*)"
+                                                                       }, // #[int(1-6)] text
                                                                        { "TitleH1Statement",@"\#\s(.*)" }, // # text
-                                                                       { "AtStatement",@"@\[(.*?),(.*?)\]" }, // @[url,text]
+                                                                       {
+                                                                           "AtStatement",@"@\[(.*?),(.*?)\]"
+                                                                       }, // @[url,text]
                                                                        { "DisorderedStatement","\\.\\s(.*)" }, // . text
                                                                        { "OrderlyStatement","\\-\\s(.*)" }, // - text
                                                                        { "BlockStatement","```(.*)" }, // ```lang ```
-                                                                       { "AttributeStatement","\\((.*?),(.*?)\\)" }, // (att,att_text)
-                                                                       { "ImageStatement","\\!\\[(.*),(.*),(.*)\\]" }, // ![src,alt,title]
+                                                                       {
+                                                                           "AttributeStatement","\\((.*?),(.*?)\\)"
+                                                                       }, // (att,att_text)
+                                                                       {
+                                                                           "ImageStatement","\\!\\[(.*),(.*),(.*)\\]"
+                                                                       }, // ![src,alt,title]
                                                                        { "EscapeStatement","//\\s(.*)" }, // // text
-                                                                       { "TableStatement","(.*?\\|)+?"}, // context|context|context|
-                                                                       { "CodeStatement","=>(.*)"},
+                                                                       {
+                                                                           "TableStatement","(.*?\\|)+?"
+                                                                       }, // context|context|context|
+                                                                       { "CodeStatement","=>(.*)" },
                                                                    };
 
-    private readonly string Path;
+    private readonly string[] Code;
 
-    private List<Statement> Asts { get; set; }
-
-    private string Code { get; set; }
-
-    private string[] GetTexts() => File.ReadAllLines(Path,Encoding.UTF8);
+    private string[] GetTexts(string Path) => File.ReadAllLines(Path,Encoding.UTF8);
     public DownApi(string path)
     {
-        Path = path;
+        Code = GetTexts(path);
+    }
+    public DownApi(string[] code)
+    {
+        Code = code;
     }
 
     public string DownToHTML()
     {
-        var a = new RegexDown(GetTexts());
-        Asts = a.Asts;
-        Code = a.ToHTMLComplete();
-        return Code;
+        var a = new RegexDown(Code);
+        return a.ToHTMLComplete();
     }
 }
